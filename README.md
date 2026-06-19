@@ -34,8 +34,8 @@ Then open <http://127.0.0.1:4000/>.
 
 ## Updating Metadata
 
-The JSON metadata files live in `_includes/metadata/`. To refresh them from the
-Google Sheet, run:
+The score metadata lives in `_includes/metadata/works.json`. To refresh it from
+the Google Sheet, run:
 
 ```sh
 make
