@@ -1,0 +1,183 @@
+{% include_relative scripts-listeners.html %}
+
+<script>
+
+function createLookup(dataArray, key) {
+	let output = {};
+	for (let entry of dataArray) {
+		let value = entry[key];
+		if (!value) {
+			continue;
+		}
+		if (!output[value]) {
+			output[value] = [];
+		}
+		output[value].push(entry);
+	}
+	return output;
+}
+
+function getRawGithubUrl(url) {
+	return url
+		.replace("https://github.com/", "https://raw.githubusercontent.com/")
+		.replace("/blob/", "/")
+		.replace("/tree/", "/");
+}
+
+function escapeHtml(value) {
+	return String(value || "")
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#039;");
+}
+
+function displayPieceImages(pieces, selector) {
+	let container = document.querySelector(selector);
+	if (!container) {
+		return;
+	}
+
+	container.innerHTML = pieces
+		.filter(piece => piece["Image URL"])
+		.map(piece => {
+			let imageUrl = getRawGithubUrl(piece["Image URL"]);
+			return `
+				<figure class="piece-image">
+					<img src="${imageUrl}" alt="${piece.Participant}: ${piece.Piece}">
+					<figcaption>
+						<b>${piece.Participant}</b><br>
+						${piece.Piece}
+					</figcaption>
+				</figure>
+			`;
+		})
+		.join("");
+}
+
+function displayMap(pieces) {
+	let mapContainer = document.querySelector("#map");
+	if (!mapContainer) {
+		return;
+	}
+
+	let points = pieces
+		.map(piece => ({
+			...piece,
+			X: parseFloat(piece.X),
+			Y: parseFloat(piece.Y),
+			Piece: piece.Piece || "",
+			Participant: piece.Participant || "",
+		}))
+		.filter(piece => !Number.isNaN(piece.X) && !Number.isNaN(piece.Y));
+
+	if (!points.length) {
+		mapContainer.innerHTML = "";
+		return;
+	}
+
+	let spec = {
+		$schema: "https://vega.github.io/schema/vega-lite/v5.json",
+		width: 700,
+		height: 500,
+		padding: 20,
+		data: {
+			values: points,
+		},
+		layer: [
+			{
+				params: [
+					{
+						name: "zoom",
+						select: {
+							type: "interval",
+							bind: "scales",
+						},
+					},
+				],
+				mark: {
+					type: "point",
+					filled: true,
+					size: 90,
+					color: "steelblue",
+					stroke: "white",
+					strokeWidth: 1.5,
+				},
+				encoding: {
+					x: {
+						field: "X",
+						type: "quantitative",
+						title: "X",
+						axis: {
+							grid: true,
+							zero: true,
+						},
+					},
+					y: {
+						field: "Y",
+						type: "quantitative",
+						title: "Y",
+						axis: {
+							grid: true,
+							zero: true,
+						},
+					},
+					tooltip: [
+						{ field: "Piece", type: "nominal", title: "Piece" },
+						{ field: "Participant", type: "nominal", title: "Participant" },
+						{ field: "X", type: "quantitative", title: "X" },
+						{ field: "Y", type: "quantitative", title: "Y" },
+					],
+				},
+			},
+			{
+				mark: {
+					type: "text",
+					align: "left",
+					baseline: "bottom",
+					dx: 8,
+					dy: -6,
+					fontSize: 10,
+					color: "#222",
+				},
+				encoding: {
+					x: {
+						field: "X",
+						type: "quantitative",
+					},
+					y: {
+						field: "Y",
+						type: "quantitative",
+					},
+					text: {
+						field: "Piece",
+						type: "nominal",
+					},
+				},
+			},
+		],
+		config: {
+			background: "#fafafa",
+			view: {
+				stroke: "#ddd",
+			},
+			axis: {
+				labelColor: "#555",
+				titleColor: "#555",
+				titleFontWeight: "bold",
+				gridColor: "#e4e4e4",
+			},
+		},
+	};
+
+	vegaEmbed(mapContainer, spec, {
+		actions: false,
+		renderer: "svg",
+	}).catch(error => {
+		console.error(error);
+		mapContainer.innerHTML = `<pre class="map-error">${escapeHtml(error.message)}</pre>`;
+	});
+}
+
+</script>

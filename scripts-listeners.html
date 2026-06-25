@@ -1,0 +1,14 @@
+<script>
+
+let METADATA        = {% include metadata/pieces.json %};
+
+document.addEventListener("DOMContentLoaded", function () {
+	let LOOKUP = {};
+	LOOKUP.piecesByParticipant = createLookup(METADATA, "Participant");
+	LOOKUP.piecesByPiece = createLookup(METADATA, "Piece");
+
+	displayPieceImages(METADATA, "#piece-images");
+	displayMap(METADATA);
+});
+
+</script>
